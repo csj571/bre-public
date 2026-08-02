@@ -72,13 +72,13 @@ committed `.github/workflows/pages.yml` uploads the tree as-is on every push to
 
 ```bash
 pip install -e ".[dev]"                            # numpy + scipy + pytest
-pytest tests/ -q                                   # 48 tests, ~9s
+pytest tests/ -q                                   # 49 tests, ~10s
 python validation/markets/validate_regimes.py      # score the vendored VIX slice
 node sim/test.mjs                                  # 67 golden-value JS tests
 ```
 
 Add `".[dev,torch]"` for the preference learner and its 5 tests; without torch
-they skip and the other 48 still run.
+they skip and the other 49 still run.
 
 `validate_regimes.py` prints the scored gate over 13.6 years of real VIX: both
 pre-registered breaks detected, at 0 and 2 trading days.
@@ -90,7 +90,8 @@ engine/               9 Bayesian primitives, numpy + scipy (torch for one)
 showcase/             the 2008 / COVID replay — zero build, runs in a browser
 sim/                  the reference simulator (+ 67 golden-value tests)
 validation/markets/   the harness, the real data, and the scored write-ups
-tests/                53 tests (48 without the torch extra), incl. the launch gates
+examples/             a 30-line end-to-end run over real crisis data
+tests/                54 tests (49 without the torch extra), incl. the launch gates
 tools/                CLI harness for the JS/Python parity check
 ```
 
@@ -118,6 +119,62 @@ from engine.calibration import brier_score, ece, PlattScaler
 from engine.gp import GaussianProcessRegressor
 from engine.policy_gate import decide
 ```
+
+### How the pieces fit
+
+```mermaid
+flowchart TB
+    subgraph STATE["state estimation"]
+        direction LR
+        KAL["kalman.py<br/>track the level"]
+        CP["changepoint.py<br/>run-length posterior"]
+        GP["gp.py<br/>GP posterior + BALD"]
+        BB["beta_binomial.py<br/>binary claims"]
+        KAL ~~~ CP ~~~ GP ~~~ BB
+    end
+
+    OBS["observations"] --> STATE
+    STATE --> SPLIT["epistemic vs aleatoric<br/>reducible ignorance vs noise"]
+    SPLIT --> GATE["policy_gate.py<br/>ACT / QUERY MORE / DEFER"]
+
+    GATE -->|ACT| OUT["decision"]
+    GATE -->|QUERY MORE| ACQ["BALD acquisition<br/>what to measure next"]
+    GATE -->|DEFER| HUMAN["abstain"]
+    ACQ --> OBS
+
+    OUT --> RESOLVE["outcomes resolve"]
+    RESOLVE --> CAL["calibration.py<br/>Brier / ECE"]
+    CAL --> REG["registry.py<br/>posterior promoted to prior<br/>only if the Brier gate opens"]
+    REG -.->|new prior| STATE
+```
+
+The loop is the point: uncertainty is decomposed before it is acted on, the
+action can be *abstention*, and a belief is only promoted to a prior after its
+predictions have been scored against resolved outcomes.
+
+### Thirty lines, end to end
+
+```bash
+python examples/detect_regime_change.py
+```
+
+```
+756 trading days, 2007-01-03 .. 2009-12-31
+5 changepoints flagged:
+
+  date          regime age (days)  P(change)
+  2007-02-27                   37      0.020
+  2008-03-11                  161      0.020
+  2008-09-15                  291      0.020  <- Lehman Brothers bankruptcy
+  2009-03-10                   61      0.020
+  2009-10-01                   54      0.020
+
+Detection latency at the pre-registered onset 2008-09-15: 0 trading days.
+```
+
+The posterior had believed the pre-Lehman regime was 291 trading days old. It
+gave up on it the day the filing hit. ([`examples/detect_regime_change.py`](examples/detect_regime_change.py)
+— no dependencies beyond this repo; `engine.changepoint` is pure standard library.)
 
 Installed as a package it imports under a collision-safe namespace:
 `from bre.engine.changepoint import BOCPD`. `preference.py` is the only module

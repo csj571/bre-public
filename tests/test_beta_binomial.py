@@ -1,4 +1,4 @@
-"""Tests for the Beta-Binomial truth-tracker (BUILD_PLAN B2). numpy + stdlib;
+"""Tests for the Beta-Binomial truth-tracker. numpy + stdlib;
 runnable with pytest or directly (`python tests/test_beta_binomial.py`)."""
 import os
 import sys

@@ -1,7 +1,9 @@
 # The reference simulator
 
 A **zero-build** browser simulator for the whole Bayesian decision stack — plain
-ES modules, no bundler, no CDN, no tracking, works offline once loaded.
+ES modules, no bundler, no tracking. The only external request it makes is a
+webfont; block it and the page falls back to system fonts and works offline.
+(The [showcase](../showcase/) makes no external requests at all.)
 
 ```bash
 python3 -m http.server        # then open http://localhost:8000/sim/

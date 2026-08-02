@@ -1,5 +1,4 @@
-"""Beta-Binomial conjugate truth-tracker (BUILD_PLAN B2; spec component 2's
-missing half).
+"""Beta-Binomial conjugate truth-tracker.
 
 The honest belief-tracker for binary / true-false claims: start from a Beta prior
 and update with each resolved outcome to a Beta posterior — closed form, never
@@ -11,8 +10,8 @@ Recipes) and invert it by bisection. stdlib `math` only.
 
 `BetaBinomialCalibration` applies one tracker per confidence bin to answer the
 calibration question — "when confidence was stated at c, how often was the claim
-true?" — giving a reliability curve with credible bands that feeds B0 / the B6
-registry.
+true?" — giving a reliability curve with credible bands, which is what
+``calibration.py`` scores and what the prior registry gates promotion on.
 """
 import math
 from typing import List, Sequence, Tuple

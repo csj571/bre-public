@@ -1,8 +1,8 @@
-"""Global determinism helper (FIX_PLAN P0.1).
+"""Global determinism helper.
 
 `set_seed` seeds Python, NumPy, and (if installed) PyTorch + CUDA from a single
 call, so a run is reproducible from one seed. torch is imported lazily so this
-stays usable in numpy-only contexts (e.g. the calibration harness in BUILD_PLAN).
+stays usable in numpy-only contexts (the calibration and changepoint code).
 """
 import random
 

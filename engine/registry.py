@@ -1,9 +1,9 @@
-"""Brier-gated prior registry (BUILD_PLAN B6 — spec component 7's missing rule).
+"""Brier-gated prior registry: a posterior is promoted to prior only with evidence.
 
-Python counterpart of the JS ``registry.js`` (study frontend / demo): the same
-versioned prior store with the same entry shape
+Python counterpart of the JS ``registry.js`` in sim/: the same versioned prior
+store with the same entry shape
 ``{id: 'vN', timestamp, author, justification, snapshot, diff}`` — plus the two
-things the JS line lacks and B6 requires:
+things that version lacks:
 
 1. **The calibration gate.** ``promote()`` succeeds only when the rolling Brier
    score over the last N *resolved* outcomes beats a threshold — a posterior

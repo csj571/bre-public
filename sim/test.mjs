@@ -1,7 +1,7 @@
 // test.mjs — engine sanity checks for the BRE-1 math modules.
 // Dev-only; the shipped app needs no build and no Node. Run with:
-//   node bre1-simulator/test.mjs     (from the repo root)
-//   node test.mjs                    (from inside bre1-simulator/)
+//   node sim/test.mjs                (from the repo root)
+//   node test.mjs                    (from inside sim/)
 //
 // These are golden-value + property tests that protect the engine against
 // regressions when refining the math. They do not touch the DOM.

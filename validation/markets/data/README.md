@@ -3,7 +3,8 @@
 `validate_regimes.py` scores BOCPD changepoint flags against **dated** structural
 breaks. That only means something against **real external ground truth** — the
 no-fabricated-data rule stands: never commit a synthetic or self-generated series
-here (that would be the closed-loop trap the BUILD_PLAN warns about).
+here — that would be a closed loop, scoring the detector against numbers its own
+assumptions produced.
 
 ## The vendored slice
 

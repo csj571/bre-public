@@ -1,4 +1,4 @@
-"""Three-action policy gate (BUILD_PLAN B5; spec component 6).
+"""Three-action policy gate.
 
 The decision layer: given a posterior and its epistemic/aleatoric uncertainty
 split, do exactly one of ACT / QUERY MORE / DEFER. This is the safety valve —

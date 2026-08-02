@@ -1,4 +1,4 @@
-"""Tests for the calibration core (BUILD_PLAN B0). numpy-only; runnable with
+"""Tests for the calibration core. numpy-only; runnable with
 pytest or directly (`python tests/test_calibration.py`)."""
 import os
 import sys

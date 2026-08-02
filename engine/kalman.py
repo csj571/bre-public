@@ -1,5 +1,5 @@
-"""Adaptive 1-D Kalman filter (BUILD_PLAN B5) — Python port of the JS
-`AdaptiveKalman` in bre1-simulator/signal.js.
+"""Adaptive 1-D Kalman filter — the Python counterpart of the JS
+`AdaptiveKalman` in sim/signal.js.
 
 Tracks a scalar latent value from noisy measurements. The observation-noise
 estimate `r` adapts to the EWMA of squared innovations, so the filter widens

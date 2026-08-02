@@ -1,4 +1,4 @@
-"""Fetch a real VIX slice for the markets validation (BUILD_PLAN B5).
+"""Fetch a real VIX slice for the markets validation.
 
 Downloads daily CBOE VIX closes from the `datasets/finance-vix` GitHub mirror
 (ODC-PDDL packaging; the underlying index data originates from CBOE) and writes

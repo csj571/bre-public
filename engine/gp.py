@@ -1,4 +1,4 @@
-"""From-scratch Gaussian Process regression (spec components 1/2/4).
+"""From-scratch Gaussian Process regression.
 
 Exact GP posterior via Cholesky factorization with a recursive-jitter guard for
 ill-conditioned kernels; hyperparameters (ell, eta, sigma_n) fit by maximizing

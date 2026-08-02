@@ -1,4 +1,4 @@
-"""Calibration core (BUILD_PLAN B0) — the load-bearing metric.
+"""Calibration core — the load-bearing metric.
 
 Hand-rolled in NumPy only (no sklearn/scipy), so it imports torch-free and runs
 anywhere the engine does. Everything here scores a set of probabilistic
@@ -9,10 +9,11 @@ predictions against resolved binary outcomes:
 
 Provides Brier score + Murphy decomposition, ECE/MCE, reliability-curve data,
 two recalibrators (Platt logistic, isotonic via PAV), Cohen's kappa for the
-inter-rater accuracy ceiling, and the ECE gate constant the CI test (B3) imports.
+inter-rater accuracy ceiling, and the ECE gate constant the CI tests import.
 
-Per the spec: raw verbalized confidence is *never* scored unrecalibrated — fit a
-recalibrator on held-out data and score the transformed probabilities.
+The rule this module exists to enforce: raw verbalized confidence is *never*
+scored unrecalibrated — fit a recalibrator on held-out data and score the
+transformed probabilities.
 """
 from __future__ import annotations
 
@@ -20,7 +21,7 @@ from dataclasses import dataclass
 
 import numpy as np
 
-# ---- Gate constants (BUILD_PLAN acceptance gates; B3's CI test imports these) ----
+# ---- Gate constants (the CI calibration tests import these) ----
 DEFAULT_N_BINS = 10
 DEFAULT_MAX_ECE = 0.10          # target: ECE < 0.1 on recalibrated confidence
 _EPS = 1e-12
@@ -301,5 +302,5 @@ def cohens_kappa(rater_a, rater_b) -> float:
 # ---------------- Gate ----------------
 
 def passes_ece_gate(ece_value: float, max_ece: float = DEFAULT_MAX_ECE) -> bool:
-    """Launch-blocking ECE gate (BUILD_PLAN). True if calibration is good enough."""
+    """Launch-blocking ECE gate. True if calibration is good enough."""
     return bool(ece_value <= max_ece)

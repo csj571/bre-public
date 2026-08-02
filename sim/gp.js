@@ -502,7 +502,7 @@ export function sampleTrajectoriesLMC(model, xGrid, nSamples, rng) {
   return paths;
 }
 
-// ---------- MCMC over GP hyperparameters (spec component 5's realization) ----------
+// ---------- MCMC over GP hyperparameters ----------
 //
 // Metropolis-Hastings walker over (ell, eta, sigma_n) in log-space, target =
 // marginal log-likelihood + log-prior. Priors: independent log-normal on each

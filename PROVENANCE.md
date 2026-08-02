@@ -9,14 +9,14 @@ breaks. Nothing here references the private tree, and nothing here depends on it
 
 | Here | Upstream | Relationship |
 |---|---|---|
-| `engine/*.py` | `engine/` | verbatim copies, except one renamed module (below) |
-| `sim/*.js`, `sim/index.html`, `sim/style.css`, `sim/test.mjs` | `bre1-simulator/` | verbatim copies |
-| `validation/markets/*.py` | `products/markets/` | verbatim except the paths in docstrings |
+| `engine/*.py` | `engine/` | code identical; comments and docstrings edited (below), one module renamed (below) |
+| `sim/*.js`, `sim/index.html`, `sim/style.css`, `sim/test.mjs` | `bre1-simulator/` | verbatim, apart from three comment lines in `gp.js` / `test.mjs` |
+| `validation/markets/*.py` | `products/markets/` | code identical; paths in docstrings adapted |
 | `validation/markets/data/`, `validation/markets/results/` | same | verbatim |
-| `tests/` | `tests/` | subset; the torch and TruthfulQA cases are dropped (below) |
-| `showcase/`, `tools/bocpd_flags.mjs` | — | written for this repository |
+| `tests/` | `tests/` | subset; the TruthfulQA case is dropped (below) |
+| `showcase/`, `examples/`, `tools/bocpd_flags.mjs`, `docs/` | — | written for this repository |
 | `index.html`, `README.md`, `PROVENANCE.md`, `.github/`, `pyproject.toml` | — | written for this repository |
-| `tests/test_regime_detection.py`, `test_js_python_parity.py`, `test_data_integrity.py` | — | written for this repository |
+| `tests/test_regime_detection.py`, `test_js_python_parity.py`, `test_data_integrity.py`, `test_examples.py` | — | written for this repository |
 
 ## The one renamed module
 
@@ -56,14 +56,20 @@ than a dependency: `pip install "bre-engine[torch]"`.
 - **The spec PDFs and internal planning docs** — design documents and cross-repo
   roadmaps, none of which are needed to run or audit anything in this tree.
 
-## Dangling roadmap references
+## What changed in the copies
 
-The engine, harness and test docstrings cite the research repo's internal
-roadmap IDs — "BUILD_PLAN B5", "FIX_PLAN P2.4" and similar. Those planning
-documents are not shipped here, and the references are left in place on purpose:
-these files are byte-identical copies, and the parity/drift guards below are
-only meaningful while that stays true. Read them as provenance markers, not as
-pointers to something missing.
+Only prose. The research repo's docstrings cite its internal roadmap and spec
+documents — "BUILD_PLAN B5", "FIX_PLAN P2.4", "spec component 6" — and point at
+upstream file paths (`bre1-simulator/signal.js`). Neither ships here, so those
+references were dangling; they have been rewritten to say what the code does and
+to point at paths that exist in this tree. Three comment lines in `sim/` got the
+same treatment.
+
+**No executable line was touched.** The guards below are behavioral rather than
+byte-level for exactly this reason: they compare what the code *computes*
+against the Python engine and against the published numbers, so editing a
+docstring cannot silently pass them, and a change to the mathematics cannot
+silently pass them either.
 
 ## Data
 

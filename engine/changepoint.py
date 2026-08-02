@@ -1,14 +1,14 @@
-"""Bayesian Online Changepoint Detection (Adams & MacKay 2007) — Python port of
-the JS `BOCPD` in bre1-simulator/signal.js.
+"""Bayesian Online Changepoint Detection (Adams & MacKay 2007) — the Python
+counterpart of the JS `BOCPD` in sim/signal.js.
 
 Normal-Inverse-Gamma conjugate, Student-t posterior predictive, constant hazard
 H = 1/lambda. Maintains the run-length posterior online and flags regime
 transitions. Pure Python (stdlib `math` for lgamma) — no scipy.
 
 Also exposes `changepoint_scores()` (detection latency + false-alarm rate) for
-validating flags against KNOWN breakpoints — the markets-anchor metric. Note the
-discrete trigger is a heuristic layer (named constants, per FIX_PLAN P2.4) over the
-principled run-length posterior, which is `R` / `p0`.
+validating flags against KNOWN breakpoints — the external-truth metric. Note the
+discrete trigger is a heuristic layer (named constants) over the principled
+run-length posterior, which is `R` / `p0`; consume the posterior, not the flags.
 """
 import math
 from typing import List, Sequence

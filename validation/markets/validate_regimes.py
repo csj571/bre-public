@@ -1,4 +1,4 @@
-"""Markets regime-detection validation (BUILD_PLAN B5 — trading anchor).
+"""Markets regime-detection validation — the external-truth anchor.
 
 Runs the Python BOCPD over a REAL VIX (or S&P) series and scores its changepoint
 flags against DATED structural breaks (2008 GFC, COVID-2020) — the external-truth
