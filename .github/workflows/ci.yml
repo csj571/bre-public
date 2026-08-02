@@ -21,11 +21,32 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "20"
-      - name: Install
+      - name: Install (numpy-only — the torch tests skip)
         run: |
           python -m pip install --upgrade pip
           pip install -e ".[dev]"
       - name: Unit tests, launch gates, and JS/Python parity
+        run: pytest tests/ -q
+
+  tests-torch:
+    # One run with the [torch] extra so the preference-learner tests actually
+    # execute. Everything else in the engine must stay green without it, which
+    # the matrix job above proves.
+    name: pytest with the torch extra
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Install with torch (CPU wheels)
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev,torch]" --extra-index-url https://download.pytorch.org/whl/cpu
+      - name: Full test suite
         run: pytest tests/ -q
 
   simulator:

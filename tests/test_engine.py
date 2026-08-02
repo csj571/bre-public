@@ -1,7 +1,7 @@
 """GP regression unit tests (numpy-only — no torch required).
 
-The torch-dependent SomaticBayesianEngine tests live in
-test_somatic_bayesian.py and skip cleanly when torch isn't installed.
+The torch-dependent BayesianPreferenceLearner tests live in test_preference.py
+and skip cleanly when torch isn't installed.
 """
 import sys
 import os

@@ -1,13 +1,18 @@
 # BRE — a Bayesian decision stack, and the two crises it was tested against
 
+[![CI](https://github.com/csj571/bre-public/actions/workflows/ci.yml/badge.svg)](https://github.com/csj571/bre-public/actions/workflows/ci.yml)
+[![Python 3.9+](https://img.shields.io/badge/python-3.9%2B-blue)](pyproject.toml)
+[![License: MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE)
+
 Everyone ships a confidence number. Almost nobody scores it.
 
 This repository holds a from-scratch Bayesian engine — Gaussian-process
-regression, Bayesian online changepoint detection, an adaptive Kalman filter,
-Beta-Binomial truth-tracking, Brier/ECE calibration, and a policy gate that
-abstains rather than bluffs — together with the one thing that makes any of it
-worth reading: **a validation against external truth that was registered before
-the data was scored.**
+regression with BALD acquisition, Bayesian online changepoint detection, an
+adaptive Kalman filter, Beta-Binomial truth-tracking, Brier/ECE calibration with
+Platt and isotonic recalibration, an online preference learner, a Brier-gated
+prior registry, and a policy gate that abstains rather than bluffs — together
+with the one thing that makes any of it worth reading: **a validation against
+external truth that was registered before the data was scored.**
 
 The test domain is markets, because price resolves truth cheaply. The question
 is not "can it predict a crash" — it cannot, and nothing here claims otherwise.
@@ -34,6 +39,13 @@ stable across hazard priors λ = 50–250.
 autocorrelated series, the same detector misses COVID entirely — the documented
 failure mode of vanilla Adams-MacKay on autocorrelated financial data. An
 implementation that flagged everything you fed it would be the suspicious one.
+
+![The showcase: 13.6 years of VIX, the run-length posterior, and P(change | data) spiking at Lehman and at the COVID crash](docs/showcase.png)
+
+*13.6 years of VIX in one unbroken run. Top: the series, with the pre-registered
+onsets in pink and the detector's flags in amber. Middle: the run-length
+posterior — long ramps that collapse when the regime breaks. Bottom:
+P(change | data), which over 13.6 years spikes exactly twice.*
 
 ## See it
 
@@ -65,24 +77,28 @@ python validation/markets/validate_regimes.py      # score the vendored VIX slic
 node sim/test.mjs                                  # 67 golden-value JS tests
 ```
 
+Add `".[dev,torch]"` for the preference learner and its 5 tests; without torch
+they skip and the other 48 still run.
+
 `validate_regimes.py` prints the scored gate over 13.6 years of real VIX: both
 pre-registered breaks detected, at 0 and 2 trading days.
 
 ## What is here
 
 ```
-engine/               8 Bayesian primitives, numpy + scipy only
+engine/               9 Bayesian primitives, numpy + scipy (torch for one)
 showcase/             the 2008 / COVID replay — zero build, runs in a browser
 sim/                  the reference simulator (+ 67 golden-value tests)
 validation/markets/   the harness, the real data, and the scored write-ups
-tests/                48 tests, including the launch gates
+tests/                53 tests (48 without the torch extra), incl. the launch gates
 tools/                CLI harness for the JS/Python parity check
 ```
 
 ## The engine
 
-Every module imports on numpy + scipy alone; `changepoint.py` — the one behind
-the result above — is pure standard library.
+Nine primitives. Every module except `preference.py` imports on numpy + scipy
+alone, and `changepoint.py` — the one behind the result above — is pure standard
+library.
 
 | Module | Method | One line |
 |---|---|---|
@@ -93,6 +109,7 @@ the result above — is pure standard library.
 | `beta_binomial.py` | conjugate truth-tracking | Beta-Binomial posterior + credible intervals (hand-rolled incomplete beta) |
 | `policy_gate.py` | decision rule | ACT / QUERY MORE / DEFER over the epistemic/aleatoric split |
 | `registry.py` | Brier-gated prior registry | posterior→prior promotion only when rolling Brier over ≥20 resolved outcomes beats the 0.25 chance baseline |
+| `preference.py` | preference learning *(torch)* | Bradley-Terry likelihood + Laplace approximation; sequential posterior→prior folding; returns reward mean **and** std for LCB objectives |
 | `seeding.py` | reproducibility | one call seeds python/numpy/torch |
 
 ```python
@@ -103,7 +120,13 @@ from engine.policy_gate import decide
 ```
 
 Installed as a package it imports under a collision-safe namespace:
-`from bre.engine.changepoint import BOCPD`.
+`from bre.engine.changepoint import BOCPD`. `preference.py` is the only module
+that needs torch, and it is an extra rather than a dependency:
+
+```bash
+pip install -e .              # everything above except preference.py
+pip install -e ".[torch]"     # adds the preference learner
+```
 
 ## Reading the result honestly
 
@@ -140,6 +163,11 @@ an already-turbulent regime, which is what a run-length detector should do.
 - **No validated cross-domain transfer.** The same machinery is designed to apply
   to other domains, but "validated on VIX and the S&P" makes it validated *there*.
   Validation transfers only where ground truth is cheap.
+- **The external validation covers the changepoint path.** `preference.py`,
+  `registry.py` and the rest are tested primitives, not externally validated
+  results — the RLHF study that exercises the preference learner lives in the
+  research repo and is not reproduced here. Read the table above as "what the
+  engine contains", and the result table at the top as "what has been scored".
 - **No emotional or physiological state detection.** Permanently out of scope —
   not a backlog item. No cheap ground truth exists for it.
 - "Gate passed" never means "the engine is validated" beyond that domain, that

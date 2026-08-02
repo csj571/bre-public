@@ -40,13 +40,18 @@ classifiers = [
 ]
 # Deliberately light. numpy is used across the primitives; scipy only by
 # engine.gp (the L-BFGS-B hyperparameter fit). `engine.changepoint` — the module
-# behind the regime-detection result — is pure stdlib.
+# behind the regime-detection result — is pure stdlib. torch is an extra, not a
+# dependency: exactly one module needs it.
 dependencies = [
     "numpy>=1.21",
     "scipy>=1.7",
 ]
 
 [project.optional-dependencies]
+# torch is needed ONLY for engine.preference.BayesianPreferenceLearner. Everything
+# else — GP, BOCPD, Kalman, calibration, Beta-Binomial, policy gate, registry —
+# runs without it.
+torch = ["torch>=2.0"]
 # Only needed to regenerate the S&P series from its bundled source dataset.
 data = ["skfolio"]
 dev = ["pytest>=7"]

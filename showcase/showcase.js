@@ -58,11 +58,16 @@ function fmtLatency(days) {
   return days === 0 ? 'same day' : `${days} trading day${days === 1 ? '' : 's'}`;
 }
 
-/** Resize a canvas for the device pixel ratio; returns its 2D context in CSS px. */
+/** Resize a canvas for the device pixel ratio; returns its 2D context in CSS px.
+ *
+ * The intended CSS height comes from `data-height`, never from the `height`
+ * attribute: assigning `canvas.height` reflects back into that attribute, so
+ * reading it here would feed the scaled value into the next redraw and the
+ * canvas would grow by a factor of dpr every frame on any non-1x display. */
 function fitCanvas(canvas) {
   const dpr = window.devicePixelRatio || 1;
   const w = canvas.clientWidth;
-  const h = parseInt(canvas.getAttribute('height'), 10);
+  const h = Number(canvas.dataset.height);
   canvas.width = Math.round(w * dpr);
   canvas.height = Math.round(h * dpr);
   canvas.style.height = `${h}px`;

@@ -9,7 +9,7 @@ breaks. Nothing here references the private tree, and nothing here depends on it
 
 | Here | Upstream | Relationship |
 |---|---|---|
-| `engine/*.py` | `engine/` | verbatim copies, minus one module (below) |
+| `engine/*.py` | `engine/` | verbatim copies, except one renamed module (below) |
 | `sim/*.js`, `sim/index.html`, `sim/style.css`, `sim/test.mjs` | `bre1-simulator/` | verbatim copies |
 | `validation/markets/*.py` | `products/markets/` | verbatim except the paths in docstrings |
 | `validation/markets/data/`, `validation/markets/results/` | same | verbatim |
@@ -18,17 +18,35 @@ breaks. Nothing here references the private tree, and nothing here depends on it
 | `index.html`, `README.md`, `PROVENANCE.md`, `.github/`, `pyproject.toml` | — | written for this repository |
 | `tests/test_regime_detection.py`, `test_js_python_parity.py`, `test_data_integrity.py` | — | written for this repository |
 
+## The one renamed module
+
+The whole engine is here — all nine primitives. One of them changed name on the
+way across:
+
+| Upstream | Here |
+|---|---|
+| `engine/somatic_bayesian.py` | `engine/preference.py` |
+| `SomaticBayesianEngine` | `BayesianPreferenceLearner` |
+| `tests/test_somatic_bayesian.py` | `tests/test_preference.py` |
+
+"Somatic" is a leftover from an earlier framing of the project (somatic-marker
+theory, the physiological limb that is permanently descoped — see the non-claims
+in the README). The class never had anything to do with physiology: it is an
+online Bayesian preference learner over a linear reward model, Bradley-Terry
+likelihood, Laplace posterior. The public name says that.
+
+The rename is the only edit — the mathematics, the API surface, the buffer
+layout, and the Cholesky-with-jitter fallback are unchanged, and no compatibility
+alias is provided because the old name was never public. `engine/__init__.py`
+exports it lazily under the new name, so torch is still an optional extra rather
+than a dependency: `pip install "bre-engine[torch]"`.
+
 ## What was deliberately left behind
 
-- **`engine/somatic_bayesian.py`** — the torch-dependent online preference
-  learner (Bradley-Terry + Laplace approximation). It belongs to an RLHF
-  reward-over-optimization study, not to regime detection, and it is the only
-  module that would drag a ~2 GB dependency into an otherwise numpy/scipy-only
-  package. `engine/__init__.py` was edited to drop its lazy export; that is the
-  single functional difference between this engine and the canonical one.
-  `tests/test_somatic_bayesian.py` went with it.
 - **The RLHF training study** (`products/alignment/`) — trainers, the synthetic
-  sequence environment, run logs, and the study dashboard.
+  sequence environment, run logs, and the study dashboard. The preference learner
+  those trainers consume *is* here; the study that exercises it is not, so
+  nothing in this repo claims a validated result for it.
 - **The focus-tracker service** (`products/health/`) — a FastAPI app consuming
   the GP.
 - **The TruthfulQA calibration eval** — the vendored prediction slice and its
