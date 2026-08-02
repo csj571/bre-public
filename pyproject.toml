@@ -1,0 +1,63 @@
+# Packaging for the BRE engine.
+#
+#   pip install .                     (from a checkout)
+#   pip install "bre-engine @ git+https://github.com/csj571/bre-public@main"
+#
+# Consumers import it under the collision-safe `bre.engine` namespace:
+#
+#   from bre.engine.changepoint import BOCPD, detect_changepoints
+#
+# The source directory stays `engine/` so this repo's own tests, the validation
+# harness and the showcase keep importing bare `engine` from the repo root; a
+# package-dir mapping re-homes it under the `bre` namespace at install time.
+#
+# This tree packages the engine ONLY — not the simulator, the showcase, the
+# validation harness, or the tests.
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "bre-engine"
+version = "0.1.0"
+description = "BRE Bayesian primitives: GP regression with BALD, BOCPD changepoint detection, adaptive Kalman filter, ACT/QUERY/DEFER policy gate, Beta-Binomial truth-tracker, Brier/ECE calibration."
+readme = "README.md"
+license = { file = "LICENSE" }
+requires-python = ">=3.9"
+authors = [{ name = "csj571" }]
+keywords = ["bayesian", "gaussian-process", "changepoint", "bocpd", "calibration", "kalman", "active-learning", "uncertainty", "regime-detection"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Scientific/Engineering :: Mathematics",
+]
+# Deliberately light. numpy is used across the primitives; scipy only by
+# engine.gp (the L-BFGS-B hyperparameter fit). `engine.changepoint` — the module
+# behind the regime-detection result — is pure stdlib.
+dependencies = [
+    "numpy>=1.21",
+    "scipy>=1.7",
+]
+
+[project.optional-dependencies]
+# Only needed to regenerate the S&P series from its bundled source dataset.
+data = ["skfolio"]
+dev = ["pytest>=7"]
+
+[project.urls]
+Homepage = "https://github.com/csj571/bre-public"
+Issues = "https://github.com/csj571/bre-public/issues"
+
+[tool.setuptools]
+# Ship the engine under the `bre` namespace (collision-safe import: bre.engine).
+# `bre` is an implicit PEP 420 namespace package (no __init__.py); the source
+# lives in the top-level engine/ dir, re-homed here via package-dir.
+packages = ["bre.engine"]
+package-dir = { "bre.engine" = "engine" }

@@ -1,0 +1,39 @@
+# Publishes the showcase and the simulator to GitHub Pages.
+#
+# There is no build step — both are plain ES modules — so this uploads the
+# repository as-is and lets the pages runtime serve it. The showcase fetches the
+# CSVs from validation/markets/data/, which is why the whole tree is uploaded
+# rather than just showcase/.
+#
+# INERT UNTIL ENABLED: Settings → Pages → Source: "GitHub Actions". Until then
+# this workflow is skipped by GitHub, and nothing is published.
+name: Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: .
+      - id: deployment
+        uses: actions/deploy-pages@v4
