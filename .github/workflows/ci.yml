@@ -1,0 +1,70 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  tests:
+    name: pytest (py${{ matrix.python-version }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.9", "3.10", "3.11", "3.12", "3.13"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Install
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+      - name: Unit tests, launch gates, and JS/Python parity
+        run: pytest tests/ -q
+
+  simulator:
+    name: simulator golden tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - run: node sim/test.mjs
+
+  data-integrity:
+    # Re-derives the S&P series from its source dataset and byte-compares against
+    # the committed CSVs. Split out because it is the only job needing skfolio.
+    name: vendored data matches a fresh derivation
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install with the data extra
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev,data]"
+      - run: pytest tests/test_data_integrity.py -q
+
+  markets-validation:
+    name: end-to-end regime validation
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e .
+      - name: Both breaks detected on the vendored VIX slice
+        run: python validation/markets/validate_regimes.py

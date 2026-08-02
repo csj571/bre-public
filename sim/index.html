@@ -1,0 +1,466 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>BRE-1 Reference Simulator</title>
+<meta name="description" content="Bayesian Reasoning Engine — live, inspectable, fiduciary-grade." />
+<link rel="preconnect" href="https://api.fontshare.com" />
+<link href="https://api.fontshare.com/v2/css?f[]=general-sans@400,500,600,700&f[]=geist-mono@400,500&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="style.css" />
+<link rel="icon" href="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><circle cx='16' cy='16' r='5' fill='%234fd1c7'/><path d='M2 22q7-10 14 0t14-0' fill='none' stroke='%234fd1c7' stroke-width='2'/></svg>" />
+</head>
+<body>
+  <!-- ─────────── TOP BAR ─────────── -->
+  <header class="topbar">
+    <div class="brand">
+      <svg class="logo" viewBox="0 0 36 36" aria-label="BRE-1 logo" fill="none">
+        <defs>
+          <linearGradient id="lg" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0" stop-color="#4fd1c7"/>
+            <stop offset="1" stop-color="#8b7dd8"/>
+          </linearGradient>
+        </defs>
+        <path d="M3 22 Q9 12, 15 22 T27 22 T33 22" stroke="url(#lg)" stroke-width="1.6" fill="none"/>
+        <path d="M3 16 Q9 6, 15 16 T27 16 T33 16" stroke="url(#lg)" stroke-width="1.6" opacity="0.55" fill="none"/>
+        <circle cx="6" cy="22" r="2.1" fill="#4fd1c7"/>
+        <circle cx="15" cy="16" r="2.1" fill="#8b7dd8"/>
+        <circle cx="24" cy="22" r="2.1" fill="#f5b94a"/>
+        <circle cx="30" cy="16" r="2.1" fill="#e94989"/>
+      </svg>
+      <div class="brand-text">
+        <h1>BRE-1</h1>
+        <span class="subtitle">Bayesian Reasoning Engine — live, inspectable, fiduciary-grade</span>
+      </div>
+    </div>
+
+    <div class="tagline">An inference substrate that tells you, in calibrated probability, exactly when to trust it and exactly when not to.</div>
+
+    <button id="chip-mode" class="mode-chip" type="button" data-testid="chip-current-mode">
+      <span class="mode-chip-icon" id="chip-icon"></span>
+      <span class="mode-chip-name mono" id="chip-name">Glidepath</span>
+      <svg class="mode-chip-chevron" viewBox="0 0 12 12" aria-hidden="true"><path d="M3 4.5 L 6 7.5 L 9 4.5" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </button>
+
+    <div class="controls">
+      <div class="ctrl-group transport">
+        <button id="btn-run" class="btn primary" data-testid="button-run" title="Run">▶</button>
+        <button id="btn-pause" class="btn" data-testid="button-pause" title="Pause">❚❚</button>
+        <button id="btn-step" class="btn" data-testid="button-step" title="Step">▶|</button>
+      </div>
+
+      <div class="ctrl-group">
+        <label class="ctrl-label">Tick rate <span id="readout-tick" class="mono">2.0 Hz</span></label>
+        <input type="range" id="slider-tick-rate" min="0.5" max="10" step="0.5" value="2" data-testid="slider-tick-rate" />
+      </div>
+
+      <div class="ctrl-group end">
+        <button id="btn-reset" class="btn ghost" data-testid="button-reset" title="Reset to seed prior">⟲ Reset</button>
+        <button id="btn-theme" class="btn ghost" data-testid="button-theme" title="Toggle theme">◐</button>
+        <button id="btn-help" class="btn ghost" data-testid="button-help" title="Help">?</button>
+        <button id="btn-export" class="btn ghost" data-testid="button-export" title="Export JSON">⤓ JSON</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- ─────────── MAIN ─────────── -->
+  <main class="main">
+    <!-- LEFT: hero plots -->
+    <section class="left">
+      <article class="card hero-card">
+        <header class="card-head">
+          <div>
+            <div class="card-eyebrow">I1 · GP Surrogate</div>
+            <h2>Posterior over <span class="mono">f(x)</span></h2>
+          </div>
+          <div class="legend mono">
+            <span class="lg-dot" style="background:var(--posterior)"></span> posterior μ
+            <span class="lg-dot" style="background:var(--posterior);opacity:.35"></span> epistemic
+            <span class="lg-dot" style="background:var(--posterior);opacity:.15"></span> aleatoric
+            <span class="lg-dot" style="background:var(--observation)"></span> obs
+            <span class="lg-dot" style="background:var(--paradigm)"></span> regime
+            <label class="toggle"><input type="checkbox" id="toggle-truth" data-testid="toggle-truth"/> truth</label>
+          </div>
+        </header>
+        <div class="canvas-wrap"><canvas id="gp-canvas" data-testid="canvas-gp"></canvas></div>
+        <div class="hover-readout mono" id="hover-readout">
+          <span>x: <b id="hov-x">—</b></span>
+          <span>μ: <b id="hov-mu">—</b></span>
+          <span>σ<sub>f</sub>: <b id="hov-sf">—</b></span>
+          <span>σ<sub>n</sub>: <b id="hov-sn">—</b></span>
+          <span>H: <b id="hov-h">—</b></span>
+        </div>
+      </article>
+
+      <article class="card stack-card">
+        <header class="card-head compact">
+          <div>
+            <div class="card-eyebrow">I3 · Entropy Decomposition</div>
+            <h3>Aleatoric &amp; Epistemic share</h3>
+          </div>
+          <div class="legend mono small">
+            <span class="lg-dot epi"></span> epistemic (reducible)
+            <span class="lg-dot ale"></span> aleatoric (irreducible)
+          </div>
+        </header>
+        <div class="canvas-wrap small"><canvas id="entropy-canvas" data-testid="canvas-entropy"></canvas></div>
+      </article>
+
+      <article class="card stack-card">
+        <header class="card-head compact">
+          <div>
+            <div class="card-eyebrow">D1 · Acquisition</div>
+            <h3>α(x) — next-query utility</h3>
+          </div>
+          <div class="legend mono small">
+            <select id="acq-fn" data-testid="select-acquisition">
+              <option value="bald">BALD</option>
+              <option value="ei">EI</option>
+              <option value="ucb">UCB</option>
+              <option value="mes">MES</option>
+            </select>
+            <span class="lg-dot" style="background:var(--paradigm)"></span> argmax
+          </div>
+        </header>
+        <div class="canvas-wrap xsmall"><canvas id="acq-canvas" data-testid="canvas-acq"></canvas></div>
+      </article>
+
+      <article class="card stack-card strip-card">
+        <header class="card-head compact">
+          <div>
+            <div class="card-eyebrow">D2 · Policy Strip</div>
+            <h3>Act / Defer / Query map</h3>
+          </div>
+          <div class="legend mono small">
+            <span class="lg-dot" style="background:var(--act)"></span> act
+            <span class="lg-dot" style="background:var(--query)"></span> query
+            <span class="lg-dot" style="background:var(--defer)"></span> defer
+          </div>
+        </header>
+        <div class="canvas-wrap strip"><canvas id="strip-canvas" data-testid="canvas-strip"></canvas></div>
+      </article>
+    </section>
+
+    <!-- RIGHT: graph + inspectors -->
+    <aside class="right">
+      <article class="card graph-card">
+        <header class="card-head compact">
+          <div>
+            <div class="card-eyebrow">Architecture</div>
+            <h3>BRE-1 · eight-node pipeline</h3>
+          </div>
+        </header>
+        <svg id="arch-svg" class="arch-svg" viewBox="0 0 360 320" preserveAspectRatio="xMidYMid meet"></svg>
+        <div class="node-doc mono small" id="node-doc">Click any node to see what it does.</div>
+      </article>
+
+      <!-- Continuity Layer panel — shown only in Continuity mode -->
+      <article class="card coupling-card" id="coupling-panel" hidden>
+        <header class="card-head compact">
+          <div>
+            <div class="card-eyebrow">Continuity Layer</div>
+            <h3>Coupled system · 8 layers</h3>
+          </div>
+          <div class="continuity-gauge">
+            <span class="cg-value mono" id="coupling-index">—</span>
+            <div class="cg-meter"><div class="cg-fill" id="coupling-meter"></div></div>
+          </div>
+        </header>
+        <svg id="coupling-svg" class="coupling-svg" viewBox="0 0 360 300" preserveAspectRatio="xMidYMid meet"></svg>
+        <div class="coupling-foot">
+          <div class="coupling-readouts mono small">
+            <span>coherence <b id="coupling-coh">—</b></span>
+            <span>λ₂ <b id="coupling-fiedler">—</b></span>
+            <span>fragmenting <b id="coupling-frag">—</b></span>
+          </div>
+          <div class="metric-toggle small">
+            <span class="mt-label">index source</span>
+            <button type="button" id="metric-corr" class="mt-btn active" data-metric="corr">correlation</button>
+            <button type="button" id="metric-fiedler" class="mt-btn" data-metric="fiedler">connectivity</button>
+          </div>
+        </div>
+        <div class="node-doc mono small" id="coupling-doc">Click a layer to inspect it. Edges show live cross-layer correlation; a shock cascade decouples layers and the continuity index drops.</div>
+      </article>
+
+      <!-- Inspector cards (compact). Each links to its node. -->
+      <article class="card node-card" id="card-S1" data-node="S1">
+        <header class="card-head compact"><div><div class="card-eyebrow" data-mode-eyebrow="S1">S1 · Data Stream</div><h3 data-mode-title="S1">Observations / tick</h3></div></header>
+        <div class="kv">
+          <div><span class="k">latest x</span><span class="v mono" id="s1-x">—</span></div>
+          <div><span class="k">latest y</span><span class="v mono" id="s1-y">—</span></div>
+          <div><span class="k">regime</span><span class="v mono" id="s1-regime">A</span></div>
+          <div><span class="k">n</span><span class="v mono" id="s1-n">0</span></div>
+        </div>
+      </article>
+
+      <article class="card node-card" id="card-S2" data-node="S2">
+        <header class="card-head compact"><div><div class="card-eyebrow" data-mode-eyebrow="S2">S2 · Signal Conditioning</div><h3 data-mode-title="S2">Kalman + BOCPD</h3><span class="flag" id="s2-flag">stationary</span></div></header>
+        <div class="kv">
+          <div><span class="k">P(r=0)</span><span class="v mono" id="s2-p0">0.00</span></div>
+          <div><span class="k">mode run-length</span><span class="v mono" id="s2-mode">0</span></div>
+          <div><span class="k">resid var</span><span class="v mono" id="s2-rv">0.00</span></div>
+          <div><span class="k">change-points</span><span class="v mono" id="s2-cp">0</span></div>
+        </div>
+        <div class="inset"><canvas id="bocpd-canvas" data-testid="canvas-bocpd"></canvas></div>
+      </article>
+
+      <article class="card node-card" id="card-S3" data-node="S3">
+        <header class="card-head compact"><div><div class="card-eyebrow" data-mode-eyebrow="S3">S3 · Feature Extractor</div><h3 data-mode-title="S3">φ(x) → μ<sub>φ</sub>, Σ<sub>φ</sub></h3></div></header>
+        <div class="kv">
+          <div><span class="k">dim φ</span><span class="v mono" id="s3-dim">1</span></div>
+          <div><span class="k">μ<sub>φ</sub></span><span class="v mono" id="s3-mu">[—]</span></div>
+          <div><span class="k">||Σ<sub>φ</sub>||</span><span class="v mono" id="s3-cov">—</span></div>
+        </div>
+      </article>
+
+      <article class="card node-card" id="card-P1" data-node="P1">
+        <header class="card-head compact"><div><div class="card-eyebrow" data-mode-eyebrow="P1">P1 · Prior Registry</div><h3 data-mode-title="P1">Current version</h3></div></header>
+        <div class="kv">
+          <div><span class="k">version</span><span class="v mono" id="p1-ver">v1</span></div>
+          <div><span class="k">author</span><span class="v mono" id="p1-author">human seed</span></div>
+          <div><span class="k">justification</span><span class="v mono small" id="p1-just">Initial seed.</span></div>
+        </div>
+      </article>
+
+      <article class="card node-card" id="card-P2" data-node="P2">
+        <header class="card-head compact"><div><div class="card-eyebrow" data-mode-eyebrow="P2">P2 · Hierarchical Prior</div><h3 data-mode-title="P2">Partial pooling τ</h3></div></header>
+        <div class="ctrl-row" data-mode-tooltip="slider-tau">
+          <label class="ctrl-label"><span class="ctrl-label-text" data-mode-label="slider-tau">τ<sub>group</sub></span> <span id="readout-tau" class="mono">0.50</span></label>
+          <input type="range" id="slider-tau" min="0" max="1" step="0.01" value="0.5" data-testid="slider-tau"/>
+        </div>
+        <div class="tree mono small">
+          global μ<sub>0</sub>=0<br/>
+          ├─ regime A (n=<span id="p2-na">0</span>)<br/>
+          └─ regime B (n=<span id="p2-nb">0</span>)
+        </div>
+      </article>
+
+      <article class="card node-card" id="card-P3" data-node="P3">
+        <header class="card-head compact"><div><div class="card-eyebrow" data-mode-eyebrow="P3">P3 · GP Kernel</div><h3 data-mode-title="P3">Library &amp; hyperparameters</h3></div></header>
+        <div class="ctrl-row">
+          <label class="ctrl-label">Kernel</label>
+          <select id="kernel-select" data-testid="select-kernel">
+            <option value="rbf">RBF</option>
+            <option value="matern32">Matérn-3/2</option>
+            <option value="matern52" selected>Matérn-5/2</option>
+            <option value="periodic">Periodic</option>
+            <option value="spectralmix">Spectral Mixture</option>
+            <option value="linear_matern52">Linear + Matérn-5/2</option>
+          </select>
+        </div>
+        <div class="ctrl-row" data-mode-tooltip="slider-ell">
+          <label class="ctrl-label"><span class="ctrl-label-text" data-mode-label="slider-ell">ℓ (lengthscale)</span> <span id="readout-ell" class="mono">1.20</span></label>
+          <input type="range" id="slider-ell" min="0.1" max="20" step="0.05" value="1.2" data-testid="slider-lengthscale"/>
+          <span class="prior-tag mono">ℓ ~ Gamma(2,1)</span>
+        </div>
+        <div class="ctrl-row" data-mode-tooltip="slider-eta">
+          <label class="ctrl-label"><span class="ctrl-label-text" data-mode-label="slider-eta">η (amplitude)</span> <span id="readout-eta" class="mono">1.00</span></label>
+          <input type="range" id="slider-eta" min="0.05" max="15" step="0.05" value="1" data-testid="slider-eta"/>
+          <span class="prior-tag mono">η ~ HalfN(0,1)</span>
+        </div>
+        <div class="ctrl-row" data-mode-tooltip="slider-sigman">
+          <label class="ctrl-label"><span class="ctrl-label-text" data-mode-label="slider-sigman">σ<sub>n</sub> (noise)</span> <span id="readout-sigman" class="mono">0.30</span></label>
+          <input type="range" id="slider-sigman" min="0.005" max="15" step="0.005" value="0.3" data-testid="slider-sigman"/>
+          <span class="prior-tag mono">σ<sub>n</sub> ~ HalfN(0,0.5)</span>
+        </div>
+        <div class="kernel-formula mono small" id="kernel-formula">k(r) = η²(1 + √5·r/ℓ + 5r²/(3ℓ²)) exp(−√5·r/ℓ)</div>
+        <button class="btn small" id="btn-optimize" data-testid="button-optimize" title="Set ℓ, η, σ_n to the values that maximise the log marginal likelihood (type-II MLE).">↯ Optimize hyperparameters</button>
+      </article>
+
+      <article class="card node-card" id="card-I1" data-node="I1">
+        <header class="card-head compact"><div><div class="card-eyebrow" data-mode-eyebrow="I1">I1 · GP Surrogate</div><h3 data-mode-title="I1">Posterior summary</h3></div></header>
+        <div class="kv">
+          <div><span class="k">grid size</span><span class="v mono">200</span></div>
+          <div><span class="k">mean σ<sub>f</sub></span><span class="v mono" id="i1-sigf">—</span></div>
+          <div><span class="k">peak μ</span><span class="v mono" id="i1-peakmu">—</span></div>
+        </div>
+      </article>
+
+      <article class="card node-card" id="card-I2" data-node="I2">
+        <header class="card-head compact"><div><div class="card-eyebrow" data-mode-eyebrow="I2">I2 · Posterior Engine</div><h3 data-mode-title="I2">Hyperparameter ensemble</h3></div></header>
+        <div class="kv">
+          <div><span class="k" title="Kish effective sample size of the importance-weighted hyperparameter ensemble (1…K).">ESS</span><span class="v mono" id="i2-ess" data-testid="text-ess">—</span></div>
+          <div><span class="k" title="Normalised entropy of the ensemble weights. ~0 = data pin θ down; ~1 = many θ fit equally well.">ensemble H</span><span class="v mono" id="i2-ent">—</span></div>
+          <div><span class="k" title="Number of hyperparameter draws θ in the ensemble.">draws K</span><span class="v mono" id="i2-k">16</span></div>
+        </div>
+        <div class="inset xs"><canvas id="trace-canvas" title="μ at the plot center over recent ticks"></canvas></div>
+        <div class="inset-label mono" style="display:flex;justify-content:space-between;font-size:10px;color:var(--text-muted);margin-top:6px"><span>ESS trajectory</span><span data-testid="text-ess-range" id="i2-ess-range">—</span></div>
+        <div class="inset xs"><canvas id="ess-canvas" title="Effective sample size of the hyperparameter ensemble over the last 50 ticks"></canvas></div>
+        <button class="btn small" id="btn-rerun" data-testid="button-rerun-diag">↻ Resample ensemble</button>
+      </article>
+
+      <article class="card node-card" id="card-I3" data-node="I3">
+        <header class="card-head compact"><div><div class="card-eyebrow" data-mode-eyebrow="I3">I3 · Entropy Estimator</div><h3 data-mode-title="I3">At cursor</h3></div></header>
+        <div class="kv">
+          <div><span class="k">H<sub>total</sub></span><span class="v mono" id="i3-htot">—</span></div>
+          <div><span class="k" id="i3-hale-label">H<sub>aleatoric</sub></span><span class="v mono" id="i3-hale">—</span></div>
+          <div><span class="k" id="i3-hepi-label">H<sub>epistemic</sub></span><span class="v mono" id="i3-hepi">—</span></div>
+          <div id="i3-derived-row" hidden><span class="k" id="i3-derived-label">derived</span><span class="v mono" id="i3-derived">—</span></div>
+        </div>
+        <div class="i3-formula mono small" id="i3-formula">H = ½ log(2πe(σ<sub>f</sub>² + σ<sub>n</sub>²))</div>
+      </article>
+
+      <article class="card node-card" id="card-I4" data-node="I4">
+        <header class="card-head compact"><div><div class="card-eyebrow" data-mode-eyebrow="I4">I4 · Model Evidence</div><h3 data-mode-title="I4">log p(y | X, θ)</h3></div></header>
+        <div class="kv">
+          <div><span class="k">current</span><span class="v mono" id="i4-current">—</span></div>
+        </div>
+        <div class="bma" id="i4-bma"></div>
+      </article>
+
+      <article class="card node-card" id="card-D1" data-node="D1">
+        <header class="card-head compact"><div><div class="card-eyebrow" data-mode-eyebrow="D1">D1 · Acquisition</div><h3 data-mode-title="D1">Argmax target</h3></div></header>
+        <div class="kv">
+          <div><span class="k">acq fn</span><span class="v mono" id="d1-fn">BALD</span></div>
+          <div><span class="k">x*</span><span class="v mono" id="d1-xstar">—</span></div>
+          <div><span class="k">α(x*)</span><span class="v mono" id="d1-avalue">—</span></div>
+        </div>
+      </article>
+
+      <article class="card node-card" id="card-D2" data-node="D2">
+        <header class="card-head compact"><div><div class="card-eyebrow" data-mode-eyebrow="D2">D2 · Policy Selector</div><h3 data-mode-title="D2">Thresholds</h3></div></header>
+        <div class="ctrl-row" data-mode-tooltip="slider-tact">
+          <label class="ctrl-label"><span class="ctrl-label-text" data-mode-label="slider-tact">τ<sub>act</sub> (max H)</span> <span id="readout-tact" class="mono">0.40</span></label>
+          <input type="range" id="slider-tact" min="-2.0" max="3" step="0.05" value="0.4" data-testid="slider-tact"/>
+        </div>
+        <div class="ctrl-row" data-mode-tooltip="slider-tdef">
+          <label class="ctrl-label"><span class="ctrl-label-text" data-mode-label="slider-tdef">τ<sub>defer</sub> (H<sub>ale</sub>/H<sub>tot</sub>)</span> <span id="readout-tdef" class="mono">0.55</span></label>
+          <input type="range" id="slider-tdef" min="0.3" max="1" step="0.01" value="0.55" data-testid="slider-tdef"/>
+        </div>
+        <div class="ctrl-row" data-mode-tooltip="slider-eig">
+          <label class="ctrl-label"><span class="ctrl-label-text" data-mode-label="slider-eig">EIG<sub>min</sub></span> <span id="readout-eig" class="mono">0.40</span></label>
+          <input type="range" id="slider-eig" min="0" max="2" step="0.05" value="0.4" data-testid="slider-eigmin"/>
+        </div>
+      </article>
+
+      <article class="card node-card" id="card-D3" data-node="D3">
+        <header class="card-head compact"><div><div class="card-eyebrow" data-mode-eyebrow="D3">D3 · Action Executor</div><h3 data-mode-title="D3">Recent decisions</h3></div></header>
+        <div class="kv">
+          <div><span class="k" id="d3-act-label">act</span><span class="v mono" id="d3-act">0</span></div>
+          <div><span class="k" id="d3-defer-label">defer</span><span class="v mono" id="d3-defer">0</span></div>
+          <div><span class="k" id="d3-query-label">query</span><span class="v mono" id="d3-query">0</span></div>
+          <div id="d3-derived-row" hidden><span class="k" id="d3-derived-label">derived</span><span class="v mono" id="d3-derived">—</span></div>
+        </div>
+        <button class="btn small" id="btn-copy-log" data-testid="button-copy-log">⎘ Copy JSON</button>
+      </article>
+
+      <article class="card node-card" id="card-D4" data-node="D4">
+        <header class="card-head compact"><div><div class="card-eyebrow" data-mode-eyebrow="D4">D4 · Posterior → Prior</div><h3 data-mode-title="D4">Promotion gate</h3></div></header>
+        <div class="ctrl-row" data-mode-tooltip="slider-bf" title="Promote when log BF ≥ log(threshold). Basis is epistemic entropy reduction since last reset — not cumulative log marginal likelihood, which isn't monotone in N.">
+          <label class="ctrl-label"><span class="ctrl-label-text" data-mode-label="slider-bf">Bayes-factor threshold</span> <span id="readout-bf" class="mono">10.0</span></label>
+          <input type="range" id="slider-bf" min="2" max="50" step="0.5" value="10" data-testid="slider-bf"/>
+        </div>
+        <div class="kv">
+          <div><span class="k">path</span><span class="v mono" id="d4-path">conjugate fast path</span></div>
+          <div><span class="k" title="max(H_epi_reference − H_epi_current, 0), in nats. Resets on promotions and change points.">log BF (nats)</span><span class="v mono" id="d4-evidence">0.00</span></div>
+          <div><span class="k">obs since promo</span><span class="v mono" id="d4-since">0</span></div>
+        </div>
+        <div class="gate" id="d4-gate">closed</div>
+      </article>
+    </aside>
+  </main>
+
+  <!-- ─────────── REGISTRY STRIP ─────────── -->
+  <section class="registry">
+    <header class="registry-head">
+      <div><span class="card-eyebrow">P1 · Prior Registry</span><h3>Versioned hyperparameter snapshots</h3></div>
+      <div class="mono small text-muted">newest →</div>
+    </header>
+    <div class="registry-scroll" id="registry-scroll"></div>
+  </section>
+
+  <!-- ─────────── DECISION LOG ─────────── -->
+  <section class="decision-log" id="decision-log">
+    <button class="log-toggle" id="log-toggle" data-testid="button-log-toggle">
+      <span>D3 · Decision Log</span><span class="caret">▾</span>
+    </button>
+    <div class="log-body" id="log-body" hidden>
+      <table class="log-table">
+        <thead><tr><th>t</th><th>class</th><th>x</th><th>μ</th><th>σ<sub>f</sub></th><th>H<sub>tot</sub></th><th>H<sub>epi</sub></th><th>prior</th></tr></thead>
+        <tbody id="log-tbody"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ─────────── HELP MODAL ─────────── -->
+  <div class="modal-shroud" id="help-modal" hidden>
+    <div class="modal">
+      <header class="modal-head">
+        <h2>BRE-1 — Reading the Simulator</h2>
+        <button class="btn ghost" id="btn-help-close" data-testid="button-help-close">✕</button>
+      </header>
+      <div class="modal-body">
+        <section>
+          <h3>The Eight Nodes</h3>
+          <ul class="nodes-list">
+            <li><b>S1 · Data Stream</b> — emits one observation per tick from the active scenario.</li>
+            <li><b>S2 · Signal Conditioning</b> — Kalman filter + BOCPD change-point detector. Fires regime flag when P(r=0) &gt; 0.5.</li>
+            <li><b>S3 · Feature Extractor</b> — assembles μ<sub>φ</sub>, Σ<sub>φ</sub> from S2 outputs.</li>
+            <li><b>P1 · Prior Registry</b> — versioned, in-memory store of every prior promotion.</li>
+            <li><b>P2 · Hierarchical Prior</b> — partial-pooling τ for cross-regime sharing.</li>
+            <li><b>P3 · GP Kernel</b> — kernel library + live hyperparameters with priors.</li>
+            <li><b>I1 · GP Surrogate</b> — the hero plot: μ(x) ± aleatoric ± epistemic.</li>
+            <li><b>I2 · Posterior Engine</b> — importance-weighted hyperparameter ensemble. Reports the effective sample size (ESS) and how concentrated the marginal over (ℓ, η, σ<sub>n</sub>) is. No MCMC: the GP posterior is closed-form.</li>
+            <li><b>I3 · Entropy Estimator</b> — H<sub>total</sub> = H<sub>aleatoric</sub> + H<sub>epistemic</sub> decomposition.</li>
+            <li><b>I4 · Model Evidence</b> — log p(y | X, θ) plus BMA bar chart over kernels.</li>
+            <li><b>D1 · Acquisition</b> — EI / UCB / MES / BALD; argmax marks next query.</li>
+            <li><b>D2 · Policy</b> — act / defer / query strip below the GP plot.</li>
+            <li><b>D3 · Action Executor</b> — audit log of every decision with the full pre-action belief.</li>
+            <li><b>D4 · Posterior → Prior</b> — Bayes-factor promotion gate. Writes a new P1 version when it fires.</li>
+          </ul>
+        </section>
+        <section>
+          <h3>The Three Demos</h3>
+          <ol>
+            <li><b>Regime change &amp; non-stationarity.</b> Run the default scenario. Watch S2's BOCPD inset; a magenta line drops at x ≈ 2. The epistemic band visibly re-opens — this is BONE-style discount.</li>
+            <li><b>Epistemic vs. aleatoric split.</b> In the entropy strip below the main plot, the darker layer is epistemic (shrinks where observations cluster); the lighter layer is aleatoric (the irreducible noise floor — grows with |x|).</li>
+            <li><b>Prior registry versioning.</b> Each time D4's gate fires, a new card slides into the registry strip at the bottom with a hyperparameter diff. Every promotion is timestamped and justified.</li>
+          </ol>
+        </section>
+        <section>
+          <h3>Reading the Plot</h3>
+          <ul>
+            <li><span class="swatch teal"></span> Teal = posterior signal. The line is μ(x); the inner band is epistemic; the outer band is aleatoric.</li>
+            <li><span class="swatch amber"></span> Amber = observations with per-point σ<sub>obs</sub>.</li>
+            <li><span class="swatch magenta"></span> Magenta = detected regime change / acquisition argmax.</li>
+            <li><span class="swatch act"></span><span class="swatch query"></span><span class="swatch defer"></span> Strip below: act / query / defer regions, color alpha modulated by margin.</li>
+          </ul>
+        </section>
+        <section>
+          <h3>The variables</h3>
+          <p class="text-muted small">Every slider maps to one symbol in the math. The label above each slider is mode-specific (e.g. "Mean-reversion horizon"); here is what each <em>actually</em> controls in the engine.</p>
+          <table class="glossary">
+            <thead><tr><th>Symbol</th><th>Slider</th><th>What it does</th></tr></thead>
+            <tbody>
+              <tr><td class="mono">ℓ</td><td>lengthscale</td><td>Distance over which f(x) stays correlated. Larger ℓ ⇒ smoother fits. Prior ℓ ~ Gamma(2,1).</td></tr>
+              <tr><td class="mono">η</td><td>amplitude</td><td>Prior std-dev of f. η² is the marginal prior variance (kernel value at zero distance). Prior η ~ HalfN(0,1).</td></tr>
+              <tr><td class="mono">σ<sub>n</sub></td><td>noise</td><td>Observation-noise std-dev. Sets how far the fit may miss each point. Prior σ<sub>n</sub> ~ HalfN(0,0.5).</td></tr>
+              <tr><td class="mono">τ<sub>act</sub></td><td>act threshold</td><td>Act only when total entropy H<sub>total</sub> ≤ τ<sub>act</sub> (confident enough to commit).</td></tr>
+              <tr><td class="mono">τ<sub>defer</sub></td><td>defer threshold</td><td>Defer when the aleatoric share H<sub>alea</sub>/H<sub>total</sub> ≥ τ<sub>defer</sub> (noise dominates — more data won't help).</td></tr>
+              <tr><td class="mono">EIG<sub>min</sub></td><td>query threshold</td><td>Otherwise query when epistemic entropy H<sub>epi</sub> ≥ EIG<sub>min</sub> (information is worth gathering).</td></tr>
+              <tr><td class="mono">τ<sub>pool</sub></td><td>pooling τ</td><td>Hierarchical partial pooling: 0 = regimes/cohorts siloed, 1 = fully shared.</td></tr>
+              <tr><td class="mono">BF</td><td>promotion gate</td><td>Promote the posterior to a new prior when log BF (epistemic-entropy reduction, in nats) clears log(BF).</td></tr>
+            </tbody>
+          </table>
+        </section>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─────────── MODE PICKER ─────────── -->
+  <dialog id="mode-picker" class="mode-picker" aria-label="Choose a mode">
+    <div class="mode-picker-shell">
+      <header class="mode-picker-head">
+        <h2>Choose a mode</h2>
+        <p class="text-muted">Every mode retargets vocabulary, priors, scenario stream, kernel default, and decision semantics. The engine underneath stays the same.</p>
+      </header>
+      <div class="mode-picker-grid" id="mode-picker-grid"></div>
+      <footer class="mode-picker-foot">
+        <a href="#" id="link-skip-mode" class="mode-picker-skip mono" data-testid="link-skip-mode-picker">skip — explore in Glidepath mode</a>
+      </footer>
+    </div>
+  </dialog>
+
+  <script type="module" src="main.js"></script>
+</body>
+</html>

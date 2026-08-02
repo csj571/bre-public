@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>BRE — a Bayesian decision stack</title>
+  <meta name="description" content="A from-scratch Bayesian engine, and the two market crises it was tested against: Lehman flagged the same day, COVID two trading days in.">
+  <link rel="stylesheet" href="showcase/showcase.css">
+  <style>
+    .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; }
+    .card {
+      display: block;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-card);
+      padding: 22px;
+      text-decoration: none;
+      color: inherit;
+      transition: border-color 120ms ease, transform 120ms ease;
+    }
+    .card:hover { border-color: var(--posterior); transform: translateY(-2px); }
+    .card h3 { margin: 0 0 8px; font-size: 17px; }
+    .card p { margin: 0; color: var(--text-muted); font-size: 13px; }
+    .card .go { display: block; margin-top: 14px; font-family: var(--font-mono); font-size: 12px; color: var(--posterior); }
+  </style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="masthead">
+    <div>
+      <p class="eyebrow">BRE · Bayesian reasoning engine</p>
+      <h1>A Bayesian decision stack, and the two crises it was tested against</h1>
+      <p class="lede">
+        Gaussian-process regression, Bayesian online changepoint detection, an adaptive
+        Kalman filter, calibration scoring, and a policy gate that abstains rather than
+        bluffs — from scratch, on numpy and scipy, held to <strong>external truth</strong> in the
+        one domain where truth is cheap: markets resolve in price.
+      </p>
+    </div>
+  </header>
+
+  <section>
+    <h2>The result</h2>
+    <div class="table-scroll">
+      <table class="results">
+        <thead>
+          <tr>
+            <th>Series</th><th>Structural break</th><th>Onset (pre-registered)</th><th>Detection latency</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>S&amp;P 500 daily log returns, 2007–2009</td>
+            <td>Lehman Brothers</td>
+            <td class="num">2008-09-15</td>
+            <td class="num"><span class="latency">same day</span></td>
+          </tr>
+          <tr>
+            <td>S&amp;P 500 daily log returns, 2019–2020</td>
+            <td>COVID-19 crash</td>
+            <td class="num">2020-02-20</td>
+            <td class="num"><span class="latency">2 trading days</span></td>
+          </tr>
+          <tr class="control">
+            <td>21-day realized volatility, 2019–2020 <span class="tag">control</span></td>
+            <td>COVID-19 crash</td>
+            <td class="num">2020-02-20</td>
+            <td class="num"><span class="latency miss">missed</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section>
+    <h2>Look around</h2>
+    <div class="cards">
+      <a class="card" href="showcase/">
+        <h3>The showcase</h3>
+        <p>2008 and COVID replayed day by day over real market data, scored against onsets
+           registered before the data was loaded. Computed in your browser.</p>
+        <span class="go">open the replay →</span>
+      </a>
+      <a class="card" href="sim/">
+        <h3>The reference simulator</h3>
+        <p>The full stack on generated scenarios: the GP posterior, the
+           epistemic/aleatoric split, and the ACT / QUERY MORE / DEFER gate.</p>
+        <span class="go">open the simulator →</span>
+      </a>
+      <a class="card" href="https://github.com/csj571/bre-public">
+        <h3>The code</h3>
+        <p>Eight Bayesian primitives, the validation harness, the real data, and the tests
+           that keep the published numbers pinned to the engine.</p>
+        <span class="go">read the repository →</span>
+      </a>
+    </div>
+  </section>
+
+  <section>
+    <h2>What is not claimed</h2>
+    <div class="prose">
+      <p>
+        <strong>This is detection, not prediction</strong> — every flag lands on or after the onset,
+        and nothing here is a trading signal. <strong>None of the mathematics is novel</strong>
+        (kriging 1950s, Kalman 1960, Brier 1950, BOCPD 2007, BALD 2011); the contribution is a
+        faithful, inspectable synthesis with external validation attached. Validation transfers
+        only where ground truth is cheap, so <strong>"validated on VIX and the S&amp;P" means
+        validated there</strong> — not everywhere the same machinery runs. The detector is also
+        chatty: it draws 5–6 flags a year in calm markets, and a shuffled placebo fires more
+        often than real data. The supported claim is fast detection of calm→turbulent
+        transitions, not low-false-alarm event detection.
+      </p>
+    </div>
+  </section>
+
+  <footer>
+    MIT licensed. Full scope limits in the repository README and in
+    <code>validation/markets/results/</code>.
+  </footer>
+
+</div>
+</body>
+</html>

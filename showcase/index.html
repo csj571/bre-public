@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>BRE-1 — detecting the 2008 and COVID regime changes</title>
+  <meta name="description" content="Bayesian Online Changepoint Detection replayed over real S&amp;P 500 and VIX data: Lehman flagged the same day, COVID two trading days in.">
+  <link rel="stylesheet" href="showcase.css">
+</head>
+<body>
+<div class="wrap">
+
+  <header class="masthead">
+    <div>
+      <p class="eyebrow">BRE-1 · external-truth validation</p>
+      <h1>Two crises, one detector, no tuning</h1>
+      <p class="lede">
+        The engine's changepoint detector, replayed day by day over real market data.
+        It flagged the <strong>Lehman collapse on the day it happened</strong> and the
+        <strong>COVID crash two trading days in</strong> — running at its defaults, with the
+        crisis dates registered in the repository before the data was ever scored.
+        Everything below is computed in your browser, right now, from the CSVs in this repo.
+      </p>
+    </div>
+    <button id="btn-theme" class="btn ghost" title="Toggle light / dark">◐</button>
+  </header>
+
+  <section>
+    <h2>Results</h2>
+    <div class="table-scroll">
+      <table class="results">
+        <thead>
+          <tr>
+            <th>Series</th>
+            <th>Structural break</th>
+            <th>Onset (pre-registered)</th>
+            <th>First flag</th>
+            <th>Detection latency</th>
+            <th>Flags in window</th>
+          </tr>
+        </thead>
+        <tbody id="results-body">
+          <tr><td colspan="6" class="num">computing…</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section>
+    <h2>Replay</h2>
+    <div class="panel" id="panel" hidden>
+      <div class="tabs" id="tabs" role="tablist"></div>
+
+      <div class="case-head">
+        <h3 id="case-title"></h3>
+        <span class="sub" id="case-sub"></span>
+      </div>
+      <p class="case-note" id="case-note"></p>
+
+      <div class="charts">
+        <canvas id="chart-series" height="252"></canvas>
+        <div class="axis-note"><span id="x-start"></span><span id="x-end"></span></div>
+        <canvas id="chart-runlength" height="132"></canvas>
+        <canvas id="chart-p0" height="84"></canvas>
+      </div>
+
+      <div class="legend">
+        <span><i class="swatch" style="background: var(--posterior)"></i>observation</span>
+        <span><i class="swatch" style="background: var(--break)"></i>pre-registered break onset</span>
+        <span><i class="swatch" style="background: var(--observation)"></i>changepoint flag</span>
+      </div>
+
+      <div class="transport">
+        <button id="btn-play" class="btn primary">▶ Replay</button>
+        <button id="btn-restart" class="btn">↺</button>
+        <input id="scrub" type="range" min="0" max="100" value="100" aria-label="Position in series">
+        <span class="speed">
+          <label for="speed">speed</label>
+          <select id="speed">
+            <option value="1">1×</option>
+            <option value="3" selected>3×</option>
+            <option value="8">8×</option>
+            <option value="20">20×</option>
+          </select>
+        </span>
+      </div>
+
+      <div class="readout">
+        <div class="stat">
+          <span class="label">Date</span>
+          <span class="value small" id="stat-date">—</span>
+        </div>
+        <div class="stat">
+          <span class="label" id="stat-obs-label">Observation</span>
+          <span class="value" id="stat-obs">—</span>
+        </div>
+        <div class="stat">
+          <span class="label">Run length (mode)</span>
+          <span class="value" id="stat-run">—</span>
+        </div>
+        <div class="stat">
+          <span class="label">P(change | data)</span>
+          <span class="value" id="stat-p0">—</span>
+        </div>
+        <div class="stat">
+          <span class="label">Detector</span>
+          <span class="value small"><span class="status-chip" id="stat-status">stable regime</span></span>
+        </div>
+      </div>
+    </div>
+    <div id="error" class="error" hidden></div>
+  </section>
+
+  <section>
+    <h2>How to read this</h2>
+    <div class="prose">
+      <p>
+        The detector is <strong>Bayesian Online Changepoint Detection</strong> (Adams &amp; MacKay,
+        2007). At every step it maintains a posterior over <em>run length</em> — how long the
+        current regime has lasted — and a Normal-Inverse-Gamma conjugate model of that
+        regime's mean and variance. When new observations stop looking like the current
+        regime, mass collapses off the growing run and onto run length zero. The middle
+        panel is that collapse; the bottom panel is the mass landing on zero.
+      </p>
+      <p>
+        Latency is measured in <strong>trading days</strong> from the pre-registered onset to the
+        first flag. Those onsets — Lehman <code>2008-09-15</code>, COVID <code>2020-02-20</code> —
+        live in <code>validation/markets/validate_regimes.py</code> and were fixed before any
+        series was scored.
+      </p>
+      <p>
+        <strong>Watch the middle panel, not the bottom one.</strong> The run-length posterior is
+        the principled output; the discrete flag is a heuristic layer on top of it, and it
+        fires on either of two conditions — P(change) crossing 0.5, or the run-length mode
+        collapsing after a long run. On daily market data it is almost always the second.
+        That is why the bottom panel's axis is narrow: P(change) mostly sits on its hazard
+        prior of 1/λ = 0.02 and rises only slightly, so the axis prints its true range rather
+        than a flattering one. If you build on this, consume the posterior — not the flag stream.
+      </p>
+
+      <div class="callout">
+        <p>
+          <strong>This is detection, not prediction.</strong> Every flag lands on or after the
+          onset. Nothing here forecasts a crash, and nothing here is a trading signal —
+          the measurement is how fast an uncertainty-aware model notices that the world
+          changed underneath it.
+        </p>
+      </div>
+
+      <p>
+        <strong>The negative control matters as much as the hits.</strong> Fed a smoothed,
+        strongly autocorrelated series (21-day realized volatility), the same detector
+        misses COVID entirely. That is the documented failure mode of vanilla
+        Adams-MacKay on autocorrelated financial series — an implementation that
+        "detected" everything you fed it would be the suspicious one.
+      </p>
+
+      <p>
+        <strong>On false alarms, honestly.</strong> Over 13.6 years the VIX run produces 14
+        flags for a 2-break truth set, so the raw false-alarm rate is 0.86. Each extra
+        flag lands on a documented, dateable stress event (Fukushima, the 2015 China
+        devaluation, Volmageddon, …), which is why the harness also reports a
+        documented-adjusted rate of 0.00 — but that secondary event list was compiled
+        <em>after</em> looking at the output, so the pre-registered part of the result is the
+        latency, not the false-alarm rate. The robustness suite goes further: on calm
+        periods the detector draws 5–6 flags a year, and a shuffled placebo fires
+        <em>more</em> often than real data. The supported claim is <strong>fast detection of
+        calm→turbulent transitions</strong>, not low-false-alarm event detection.
+        Full write-ups: <a href="../validation/markets/results/regime_validation.md">regime_validation.md</a>
+        and <a href="../validation/markets/results/robustness_checks.md">robustness_checks.md</a>.
+      </p>
+
+      <p>
+        <strong>Same numbers as the Python engine.</strong> This page runs the JavaScript BOCPD
+        from <code>sim/signal.js</code>; the validated results come from
+        <code>engine/changepoint.py</code>. They are independent implementations, and
+        <code>tests/test_js_python_parity.py</code> asserts they flag identical indices on every
+        series in this repo — so what you are watching is the validated detector, not a
+        lookalike.
+      </p>
+
+      <p>
+        To drive the same machinery interactively — the GP posterior, the
+        epistemic/aleatoric split, the ACT / QUERY MORE / DEFER policy gate — open the
+        <a href="../sim/index.html">reference simulator</a>. Note that the simulator runs on
+        generated scenarios: no run in it is evidence about anything.
+      </p>
+    </div>
+  </section>
+
+  <footer>
+    Data: CBOE VIX daily closes and S&amp;P 500 daily closes, both real and
+    provenance-documented — see <a href="../validation/markets/data/README.md">data/README.md</a>.
+    Reproduce the scored result with
+    <code>python validation/markets/validate_regimes.py</code>.
+  </footer>
+
+</div>
+<script type="module" src="showcase.js"></script>
+</body>
+</html>
